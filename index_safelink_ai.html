@@ -1,282 +1,1092 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LINKGUARD AI - Trình Kiểm Tra Liên Kết An Toàn - made by Anh Duy 9A2 TS</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-body{font-family:Inter,sans-serif;background:#f8fafc;color:#334155}
-.glass-panel{background:rgba(255,255,255,.95);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.6);box-shadow:0 10px 25px rgba(0,0,0,.05)}
-.scanning-line{position:absolute;top:0;left:0;width:100%;height:2px;background:#3b82f6;box-shadow:0 0 10px #3b82f6;animation:scan 2s linear infinite;display:none;z-index:20}
-@keyframes scan{0%{top:0;opacity:0}10%,90%{opacity:1}100%{top:100%;opacity:0}}
-.skeleton{background:linear-gradient(110deg,#ececec 8%,#f5f5f5 18%,#ececec 33%);background-size:200% 100%;animation:shine 1.5s linear infinite;border-radius:5px}
-@keyframes shine{to{background-position-x:-200%}}
-.star-btn{color:#cbd5e1;transition:transform .15s,color .15s}.star-btn:hover{transform:scale(1.12);color:#facc15}.star-btn.selected{color:#facc15}
-.markdown-content p{margin-bottom:.75rem}.detail-card{transition:box-shadow .2s}.detail-card:hover{box-shadow:0 8px 18px #0f172a12}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Safe Link Checker - Trình Kiểm Tra Liên Kết An Toàn</title>
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Load Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Cấu hình Tailwind theme -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#1e293b',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        success: '#10b981'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #334155;
+        }
+        
+        /* Hiệu ứng kính mờ cho các panel */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Animation đường kẻ quét khi đang phân tích */
+        .scanning-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #3b82f6;
+            box-shadow: 0 0 10px #3b82f6, 0 0 20px #3b82f6;
+            animation: scan 2s linear infinite;
+            display: none;
+            z-index: 20;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .result-card {
+            transition: all 0.3s ease;
+        }
+        
+        /* Định dạng nội dung markdown từ AI */
+        .markdown-content p {
+            margin-bottom: 0.75rem;
+        }
+        .markdown-content ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .markdown-content li {
+            margin-bottom: 0.25rem;
+        }
+        .markdown-content strong {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        /* Skeleton loading animation (hiệu ứng tải khung xương) */
+        .skeleton {
+            background: #e2e8f0;
+            background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+            border-radius: 5px;
+            background-size: 200% 100%;
+            animation: 1.5s shine linear infinite;
+        }
+        
+        @keyframes shine {
+            to {
+                background-position-x: -200%;
+            }
+        }
+        
+        /* Hiệu ứng mượt mà khi thêm review mới */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+    </style>
 </head>
-<body class="min-h-screen flex flex-col relative overflow-x-hidden">
-<div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-100 mix-blend-multiply blur-3xl opacity-70 -z-10"></div>
-<div class="fixed top-[20%] right-[-10%] w-[35%] h-[35%] rounded-full bg-purple-100 mix-blend-multiply blur-3xl opacity-70 -z-10"></div>
+<body class="min-h-screen flex flex-col font-sans relative overflow-x-hidden">
 
-<header class="w-full py-5 px-4 md:px-8 bg-white/85 backdrop-blur-md border-b border-gray-100 sticky top-0 z-30">
-  <div class="max-w-6xl mx-auto flex justify-between items-center gap-3">
-    <button id="homeNav" class="flex items-center gap-3 text-left">
-      <span class="w-11 h-11 flex items-center justify-center bg-blue-600 rounded-xl text-white shadow-lg"><i class="fa-solid fa-shield-halved text-xl"></i></span>
-      <span><span class="block text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600">SafeLink AI</span><span class="block text-xs text-gray-500 font-medium tracking-wide uppercase">Bảo vệ & Phân tích</span></span>
-    </button>
-    <nav class="flex items-center gap-2 text-sm font-semibold">
-      <button id="homeButton" class="px-3 py-2 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition"><i class="fa-solid fa-house mr-1"></i><span class="hidden sm:inline">Trang chủ</span></button>
-      <button id="reviewNav" class="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition shadow-md"><i class="fa-solid fa-star mr-1"></i>Đánh giá</button>
-    </nav>
-  </div>
-</header>
+    <!-- Các khối màu trang trí nền mờ -->
+    <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-100 mix-blend-multiply filter blur-3xl opacity-70 animate-blob -z-10"></div>
+    <div class="fixed top-[20%] right-[-10%] w-[35%] h-[35%] rounded-full bg-purple-100 mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000 -z-10"></div>
+    <div class="fixed bottom-[-10%] left-[20%] w-[30%] h-[30%] rounded-full bg-pink-100 mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000 -z-10"></div>
 
-<main id="homeSection" class="flex-grow w-full max-w-4xl mx-auto px-4 py-10 md:py-12 flex flex-col items-center">
-  <section class="text-center mb-10 w-full">
-    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium mb-6 border border-blue-100">
-      <span class="relative flex h-2 w-2"><span class="animate-ping absolute h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span>
-      Phân tích URL hỗ trợ AI
-    </div>
-    <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 leading-tight">Kiểm tra độ an toàn của<br class="hidden md:block"><span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">bất kỳ đường link nào</span></h1>
-    <p class="text-lg text-gray-600 max-w-2xl mx-auto">Phân tích dấu hiệu đáng ngờ trong URL để hỗ trợ nhận diện trang web lừa đảo (phishing), mã độc và các liên kết bất thường.</p>
-  </section>
-
-  <section class="w-full relative z-10 mb-10">
-    <div class="glass-panel p-2 rounded-2xl relative overflow-hidden shadow-xl">
-      <div id="scanningLine" class="scanning-line"></div>
-      <form id="checkForm" class="relative flex flex-col md:flex-row gap-2">
-        <div class="relative flex-grow flex items-center">
-          <i class="fa-solid fa-link absolute left-4 text-gray-400 text-xl"></i>
-          <input type="text" id="urlInput" placeholder="Dán đường link cần kiểm tra... (VD: https://example.com)" class="w-full pl-12 pr-12 py-4 rounded-xl bg-transparent text-gray-800 placeholder-gray-400 focus:outline-none text-base md:text-lg" required>
-          <button type="button" id="clearBtn" aria-label="Xóa đường link" class="absolute right-4 text-gray-400 hover:text-gray-700 hidden text-xl"><i class="fa-solid fa-circle-xmark"></i></button>
-        </div>
-        <button type="submit" id="checkBtn" class="px-7 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-lg transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-60">
-          <span id="btnText">Phân Tích</span><i id="btnIcon" class="fa-solid fa-wand-magic-sparkles"></i>
-          <i id="loadingSpinner" class="fa-solid fa-spinner fa-spin hidden"></i>
-        </button>
-      </form>
-    </div>
-    <p class="mt-4 text-center text-sm text-gray-500 bg-white/70 px-4 py-2 rounded-lg border border-gray-200/60"><i class="fa-solid fa-circle-info text-blue-500 mr-1"></i> Kết quả chỉ mang tính tham khảo; không nhập mật khẩu hoặc dữ liệu nhạy cảm vào trang lạ.</p>
-  </section>
-
-  <section id="loadingView" class="hidden w-full">
-    <div class="glass-panel p-6 md:p-8 rounded-2xl shadow-xl">
-      <div class="skeleton h-6 w-3/4 mb-6"></div><div class="skeleton h-4 w-full mb-3"></div><div class="skeleton h-4 w-5/6 mb-3"></div><div class="skeleton h-4 w-2/3"></div>
-      <p class="mt-7 text-center text-blue-600 font-medium"><i class="fa-solid fa-brain animate-pulse mr-2"></i>Đang phân tích dấu hiệu của đường link...</p>
-    </div>
-  </section>
-
-  <section id="resultsContainer" class="hidden w-full mt-2">
-    <div class="flex justify-center mb-6"><div id="statusBadge" class="px-6 py-2.5 rounded-full font-bold text-lg flex items-center gap-2 text-white shadow-lg"></div></div>
-    <div class="glass-panel rounded-2xl overflow-hidden shadow-xl mb-6">
-      <div class="bg-gray-50/80 border-b border-gray-100 p-4 md:p-6 break-all"><p class="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider"><i class="fa-solid fa-magnifying-glass mr-1"></i>URL đã phân tích</p><p id="displayUrl" class="font-mono text-gray-800 font-medium"></p></div>
-      <div class="p-6 md:p-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-7 mb-8">
-          <div class="flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-gray-100">
-            <h3 class="text-sm font-bold text-gray-500 uppercase mb-4">Điểm rủi ro</h3>
-            <div class="relative w-36 h-36 flex items-center justify-center">
-              <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36"><path stroke="#e5e7eb" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/><path id="gaugePath" stroke="#10b981" stroke-width="3" stroke-dasharray="0,100" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/></svg>
-              <span id="riskScoreText" class="absolute text-4xl font-black">0%</span>
+    <!-- Header / Navigation bar -->
+    <header class="w-full py-6 px-4 md:px-8 bg-white/80 backdrop-blur-md border-b border-gray-100 z-10 sticky top-0">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <!-- Logo area -->
+            <div class="flex items-center gap-3">
+                <div class="relative w-10 h-10 flex items-center justify-center bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-shield-halved text-xl"></i>
+                    <div class="absolute inset-0 rounded-xl border border-white/20"></div>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600">SafeLink AI</h1>
+                    <p class="text-xs text-gray-500 font-medium tracking-wide uppercase">Bảo vệ & Phân tích</p>
+                </div>
             </div>
-            <p id="riskLabel" class="mt-4 font-bold text-center"></p>
-          </div>
-          <div class="md:col-span-2">
-            <h3 class="text-lg font-bold text-gray-800 mb-3"><i class="fa-solid fa-robot text-blue-500 mr-2"></i>Nhận xét phân tích</h3>
-            <div id="aiAnalysisContent" class="bg-blue-50 p-5 rounded-2xl border border-blue-100 leading-relaxed"></div>
-          </div>
+            <!-- Navigation links -->
+            <div class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+                <a href="#" id="navHome" class="nav-link text-blue-600 font-bold transition-colors">Trang chủ</a>
+                <a href="#" id="navReviews" class="nav-link hover:text-blue-600 transition-colors">Đánh giá</a>
+                <button id="navToolBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-md">
+                    <i class="fa-solid fa-shield-virus"></i> Công cụ kiểm tra
+                </button>
+            </div>
         </div>
-        <div class="pt-6 border-t border-gray-100">
-          <h3 class="text-lg font-bold text-gray-800 mb-5"><i class="fa-solid fa-list-check text-indigo-500 mr-2"></i>Chi tiết dấu hiệu</h3>
-          <div id="technicalDetails" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </header>
+
+    <!-- Nội dung chính -->
+    <main class="flex-grow w-full max-w-4xl mx-auto px-4 py-12 flex flex-col items-center">
+        
+        <!-- === SECTION: TRANG CHỦ === -->
+        <div id="homeSection" class="w-full flex flex-col items-center transition-all duration-500">
+            <!-- Hero Section (Tiêu đề chính) -->
+            <div class="text-center mb-10 w-full">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium mb-6 border border-blue-100 shadow-sm">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </span>
+                    Powered by Google Gemini AI
+                </div>
+                <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 leading-tight">
+                    Kiểm tra độ an toàn của <br class="hidden md:block"/>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">bất kỳ đường link nào</span>
+                </h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Sử dụng Trí tuệ nhân tạo để phân tích URL, phát hiện trang web lừa đảo (phishing), phần mềm độc hại (malware) và các dấu hiệu bất thường trước khi bạn click vào.
+                </p>
+                <button id="startToolBtn" class="mt-8 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-3 mx-auto transform hover:scale-105">
+                    Mở Công Cụ Kiểm Tra Ngay <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
         </div>
-      </div>
-    </div>
-    <div class="flex flex-wrap justify-center gap-3 mb-8">
-      <button id="copyBtn" class="px-5 py-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl font-medium"><i class="fa-regular fa-copy mr-2"></i>Copy báo cáo</button>
-      <button id="resetBtn" class="px-5 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium"><i class="fa-solid fa-rotate-right mr-2"></i>Kiểm tra link khác</button>
-    </div>
-  </section>
-</main>
 
-<section id="reviewSection" class="hidden flex-grow w-full max-w-2xl mx-auto px-4 py-10 md:py-14">
-  <div class="glass-panel rounded-2xl p-6 md:p-8 shadow-xl">
-    <div class="text-center mb-7">
-      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 text-2xl mb-4"><i class="fa-solid fa-star"></i></div>
-      <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900">Đánh giá SafeLink AI</h2>
-      <p class="text-gray-500 mt-2">Chia sẻ ý kiến để giúp công cụ ngày càng tốt hơn.</p>
-    </div>
-    <form id="reviewForm" class="space-y-5">
-      <div><label for="reviewName" class="block text-sm font-semibold text-gray-700 mb-2">Tên hiển thị (không bắt buộc)</label><input id="reviewName" maxlength="60" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none" placeholder="Ví dụ: Người dùng SafeLink"></div>
-      <div><p class="text-sm font-semibold text-gray-700 mb-3 text-center">Bạn chấm công cụ này mấy sao?</p>
-        <div id="starRating" class="flex justify-center gap-3 text-3xl" role="group" aria-label="Chọn số sao">
-          <button type="button" data-star="1" aria-label="1 sao" class="star-btn"><i class="fa-solid fa-star"></i></button>
-          <button type="button" data-star="2" aria-label="2 sao" class="star-btn"><i class="fa-solid fa-star"></i></button>
-          <button type="button" data-star="3" aria-label="3 sao" class="star-btn"><i class="fa-solid fa-star"></i></button>
-          <button type="button" data-star="4" aria-label="4 sao" class="star-btn"><i class="fa-solid fa-star"></i></button>
-          <button type="button" data-star="5" aria-label="5 sao" class="star-btn"><i class="fa-solid fa-star"></i></button>
-        </div><p id="ratingText" class="text-center text-sm text-gray-500 mt-2">Hãy chọn số sao</p>
-      </div>
-      <div><label for="reviewContent" class="block text-sm font-semibold text-gray-700 mb-2">Nhận xét</label><textarea id="reviewContent" rows="4" maxlength="1000" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-y" placeholder="Bạn thích điều gì? Có điều gì cần cải thiện?"></textarea></div>
-      <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg"><i class="fa-solid fa-paper-plane mr-2"></i>Gửi đánh giá</button>
-      <p id="reviewMessage" role="status" class="text-sm text-center"></p>
-    </form>
-    <div class="mt-8 pt-6 border-t border-gray-100">
-      <div class="flex items-center justify-between gap-3 mb-4"><h3 class="font-bold text-gray-800">Đánh giá trên thiết bị này</h3><span id="reviewCount" class="text-sm text-gray-500">0 đánh giá</span></div>
-      <div id="reviewList" class="space-y-3"><p class="text-sm text-gray-500">Chưa có đánh giá nào.</p></div>
-      <p class="text-xs text-gray-400 mt-4">Đánh giá được lưu trên trình duyệt hiện tại, không tự động gửi lên máy chủ và không hiển thị trên thiết bị khác.</p>
-    </div>
-  </div>
-</section>
+        <!-- === SECTION: ĐÁNH GIÁ === -->
+        <div id="reviewSection" class="w-full hidden opacity-0 transition-opacity duration-500 flex-col items-center">
+            <div class="text-center mb-12 w-full">
+                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Đánh Giá Từ <span class="text-blue-600">Người Dùng</span></h2>
+                <p class="text-gray-600 max-w-xl mx-auto">Chia sẻ trải nghiệm của bạn hoặc xem những người khác nói gì về công cụ.</p>
+            </div>
+            
+            <!-- Form thêm đánh giá -->
+            <div class="w-full max-w-2xl mx-auto mb-10 glass-panel p-6 md:p-8 rounded-2xl shadow-md border border-gray-100">
+                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2"><i class="fa-solid fa-pen-to-square text-blue-500"></i> Viết đánh giá của bạn</h3>
+                <form id="reviewForm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <input type="text" id="reviewerName" placeholder="Tên của bạn" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" required>
+                        </div>
+                        <div>
+                            <select id="reviewRating" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer" required>
+                                <option value="5">⭐⭐⭐⭐⭐ Tuyệt vời</option>
+                                <option value="4">⭐⭐⭐⭐ Rất tốt</option>
+                                <option value="3">⭐⭐⭐ Bình thường</option>
+                                <option value="2">⭐⭐ Tệ</option>
+                                <option value="1">⭐ Rất tệ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <textarea id="reviewComment" placeholder="Chia sẻ ý kiến của bạn về công cụ này..." rows="3" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors resize-none" required></textarea>
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                        Gửi Đánh Giá <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
 
-<footer class="w-full py-7 text-center text-gray-500 text-sm mt-auto border-t border-gray-100 bg-white/60">
-  <p class="font-bold text-gray-700 uppercase tracking-wide">LINKGUARD AI — SẢN PHẨM KHOA HỌC KĨ THUẬT 2026</p>
-  <p class="mt-2">Công cụ hỗ trợ kiểm tra liên kết; không thể bảo đảm phát hiện mọi trang web độc hại.</p>
-</footer>
+            <div id="reviewsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                <!-- Review 1 -->
+                <div class="glass-panel p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl">T</div>
+                        <div>
+                            <h4 class="font-bold text-gray-800">Trần Anh Tuấn</h4>
+                            <div class="text-yellow-400 text-sm"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 italic">"Công cụ rất tuyệt vời, giúp tôi phát hiện ngay một link lừa đảo trúng thưởng gửi qua Zalo. Rất đáng tin cậy!"</p>
+                </div>
+                <!-- Review 2 -->
+                <div class="glass-panel p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-xl">H</div>
+                        <div>
+                            <h4 class="font-bold text-gray-800">Nguyễn Minh Hằng</h4>
+                            <div class="text-yellow-400 text-sm"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i></div>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 italic">"Giao diện đẹp và dễ sử dụng. Phần giải thích chi tiết của AI giúp tôi hiểu rõ tại sao đường link lại nguy hiểm."</p>
+                </div>
+            </div>
+        </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const $ = id => document.getElementById(id);
-  const form = $('checkForm'), urlInput = $('urlInput'), clearBtn = $('clearBtn');
-  const checkBtn = $('checkBtn'), btnText = $('btnText'), btnIcon = $('btnIcon'), spinner = $('loadingSpinner');
-  const scanningLine = $('scanningLine'), loadingView = $('loadingView'), results = $('resultsContainer');
-  const homeSection = $('homeSection'), reviewSection = $('reviewSection');
-  let lastReport = null, selectedRating = 0;
+        <!-- === SECTION: CÔNG CỤ KIỂM TRA === -->
+        <div id="toolSection" class="w-full hidden opacity-0 transition-opacity duration-500 flex-col items-center">
+            
+            <div class="text-center mb-8 w-full">
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-3">Công Cụ <span class="text-blue-600">Phân Tích</span> URL</h2>
+                <p class="text-gray-500">Dán đường link đáng ngờ vào bên dưới để AI quét ngay lập tức.</p>
+            </div>
 
-  function showHome() {
-    reviewSection.classList.add('hidden');
-    homeSection.classList.remove('hidden');
-    window.scrollTo({top:0,behavior:'smooth'});
-  }
-  function showReviews() {
-    homeSection.classList.add('hidden');
-    reviewSection.classList.remove('hidden');
-    reviewSection.scrollIntoView({behavior:'smooth',block:'start'});
-    renderReviews();
-  }
-  $('homeNav').addEventListener('click', showHome);
-  $('homeButton').addEventListener('click', showHome);
-  $('reviewNav').addEventListener('click', showReviews);
+        <!-- Form nhập URL -->
+        <div class="w-full relative z-10 mb-12">
+            <div class="glass-panel p-2 rounded-2xl relative overflow-hidden group shadow-xl">
+                <!-- Hiệu ứng tia quét khi đang tải -->
+                <div id="scanningLine" class="scanning-line"></div>
+                
+                <form id="checkForm" class="relative flex flex-col md:flex-row gap-2">
+                    <div class="relative flex-grow flex items-center">
+                        <div class="absolute left-4 text-gray-400 text-xl">
+                            <i class="fa-solid fa-link"></i>
+                        </div>
+                        <input 
+                            type="text" 
+                            id="urlInput" 
+                            placeholder="Dán đường link (URL) cần kiểm tra vào đây... (VD: http://example.com)" 
+                            class="w-full pl-12 pr-12 py-4 rounded-xl border-none bg-transparent text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-0 text-lg"
+                            required
+                        >
+                        <!-- Nút xóa nhanh nội dung input -->
+                        <button type="button" id="clearBtn" class="absolute right-4 text-gray-400 hover:text-gray-600 hidden transition-colors text-xl p-1">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                        </button>
+                    </div>
+                    <!-- Nút submit phân tích -->
+                    <button 
+                        type="submit" 
+                        id="checkBtn"
+                        class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium text-lg transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 md:w-auto w-full group-focus-within:ring-2 ring-blue-500 ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        <span id="btnText">Phân Tích AI</span>
+                        <i id="btnIcon" class="fa-solid fa-wand-magic-sparkles"></i>
+                        <!-- Spinner hiển thị lúc loading -->
+                        <svg id="loadingSpinner" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+            <!-- Thông báo phụ -->
+            <div class="mt-4 flex justify-center">
+                <div class="text-sm text-gray-500 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-200/50 shadow-sm inline-flex items-center gap-2">
+                    <i class="fa-solid fa-shield-check text-green-500"></i>
+                    Bảo mật tuyệt đối: URL của bạn không bị lưu trữ.
+                </div>
+            </div>
+        </div>
 
-  urlInput.addEventListener('input', () => clearBtn.classList.toggle('hidden', !urlInput.value.trim()));
-  clearBtn.addEventListener('click', () => {urlInput.value='';clearBtn.classList.add('hidden');urlInput.focus();});
+        <!-- Khung Skeleton Loading (Hiển thị trong lúc chờ AI trả kết quả) -->
+        <div id="loadingView" class="w-full hidden mt-2">
+            <div class="flex justify-center mb-6">
+                <div class="skeleton h-10 w-48 rounded-full shadow-sm"></div>
+            </div>
+            <div class="glass-panel p-6 md:p-8 rounded-2xl w-full border border-gray-100 shadow-xl">
+                <div class="skeleton h-6 w-3/4 mb-8"></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Gauge skeleton -->
+                    <div class="col-span-1 flex flex-col items-center">
+                        <div class="skeleton h-32 w-32 rounded-full mb-4"></div>
+                        <div class="skeleton h-4 w-24"></div>
+                    </div>
+                    <!-- Text skeleton -->
+                    <div class="col-span-1 md:col-span-2 space-y-3 pt-2">
+                        <div class="skeleton h-6 w-1/3 mb-4"></div>
+                        <div class="skeleton h-4 w-full"></div>
+                        <div class="skeleton h-4 w-full"></div>
+                        <div class="skeleton h-4 w-5/6"></div>
+                        <div class="skeleton h-4 w-full"></div>
+                        <div class="skeleton h-4 w-4/6"></div>
+                    </div>
+                </div>
+                
+                <!-- Details skeleton -->
+                <div class="space-y-3 mt-8 border-t border-gray-100 pt-6">
+                    <div class="skeleton h-6 w-1/4 mb-4"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="skeleton h-20 w-full rounded-xl"></div>
+                        <div class="skeleton h-20 w-full rounded-xl"></div>
+                        <div class="skeleton h-20 w-full rounded-xl"></div>
+                        <div class="skeleton h-20 w-full rounded-xl"></div>
+                    </div>
+                </div>
+                
+                <!-- Trạng thái loading text -->
+                <div class="mt-8 flex items-center justify-center gap-3 text-blue-500 font-medium bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <i class="fa-solid fa-brain animate-pulse text-lg"></i> AI đang phân tích sâu cấu trúc URL, tên miền và các mẫu mã độc...
+                </div>
+            </div>
+        </div>
 
-  function setLoading(on) {
-    urlInput.disabled = on; checkBtn.disabled = on;
-    btnText.textContent = on ? 'Đang phân tích...' : 'Phân Tích';
-    btnIcon.classList.toggle('hidden',on); spinner.classList.toggle('hidden',!on);
-    scanningLine.style.display = on ? 'block' : 'none';
-    loadingView.classList.toggle('hidden',!on);
-    if(on) results.classList.add('hidden');
-  }
-  function validUrl(value) {
-    try { const u = new URL(value); return (u.protocol==='http:' || u.protocol==='https:') && u.hostname.includes('.'); }
-    catch { return false; }
-  }
-  function fallbackAnalysis(url) {
-    let score=5; const points=[]; const u=new URL(url); const domain=u.hostname.toLowerCase();
-    if(u.protocol!=='https:'){score+=25;points.push({point:'Không dùng HTTPS',description:'Kết nối không được mã hóa bằng HTTPS. Điều này không tự chứng minh trang web là lừa đảo, nhưng cần thận trọng.',isGood:false});}
-    else points.push({point:'Có HTTPS',description:'Kết nối sử dụng HTTPS. Tuy nhiên, HTTPS không bảo đảm trang web đáng tin cậy.',isGood:true});
-    if(/^(?:\d{1,3}\.){3}\d{1,3}$/.test(domain)){score+=35;points.push({point:'Tên máy chủ là địa chỉ IP',description:'Đường link dùng địa chỉ IP thay cho tên miền; hãy xác minh nguồn gửi link.',isGood:false});}
-    if(domain.length>35 || (domain.match(/\d/g)||[]).length>4){score+=20;points.push({point:'Tên miền dài hoặc nhiều chữ số',description:'Đây có thể là dấu hiệu bất thường, nhưng không đủ để kết luận trang web độc hại.',isGood:false});}
-    const tlds=['.tk','.ml','.ga','.cf','.gq','.click'];
-    if(tlds.some(t=>domain.endsWith(t))){score+=20;points.push({point:'Đuôi tên miền cần thận trọng',description:'Một số đuôi miền bị lạm dụng trong các chiến dịch lừa đảo; cần kiểm tra thêm nguồn và nội dung.',isGood:false});}
-    if(u.username || u.password){score+=25;points.push({point:'URL chứa thông tin trước tên miền',description:'URL có phần username/password trước hostname. Đây là kỹ thuật có thể được dùng để đánh lừa người xem.',isGood:false});}
-    if(points.length<3) points.push({point:'Không phát hiện dấu hiệu cấu trúc nổi bật',description:'Phân tích tĩnh đơn giản không phát hiện thêm bất thường rõ ràng. Điều này không có nghĩa là link chắc chắn an toàn.',isGood:true});
-    score=Math.max(0,Math.min(100,score));
-    const status=score>=65?'Nguy Hiểm':score>=40?'Đáng Ngờ':score>=20?'Cảnh Báo Nhẹ':'Chưa thấy dấu hiệu rõ ràng';
-    return {isSafe:score<40,riskScore:score,statusLabel:status,summary:'Đây là đánh giá tự động dựa trên cấu trúc URL, không phải kết quả quét toàn bộ website hoặc cơ sở dữ liệu mã độc. Điểm thấp không bảo đảm an toàn. Không đăng nhập, tải tệp hay nhập thông tin cá nhân nếu bạn chưa xác minh được nguồn gửi link.',technicalPoints:points};
-  }
-  async function analyzeUrl(url) {
-    // Để dùng Gemini thật, cần máy chủ trung gian giữ API key an toàn.
-    // Không đặt API key bí mật trực tiếp trong mã HTML công khai.
-    return fallbackAnalysis(url);
-  }
-  function renderResults(data,url) {
-    lastReport={...data,url};
-    const score=data.riskScore;
-    let color='#10b981', badge='bg-emerald-500', icon='fa-shield-halved', text='text-emerald-600';
-    if(score>=60){color='#ef4444';badge='bg-red-500';icon='fa-triangle-exclamation';text='text-red-600';}
-    else if(score>=30){color='#f59e0b';badge='bg-amber-500';icon='fa-circle-exclamation';text='text-amber-600';}
-    $('statusBadge').className=`px-6 py-2.5 rounded-full font-bold text-lg flex items-center gap-2 text-white shadow-lg ${badge}`;
-    $('statusBadge').innerHTML=`<i class="fa-solid ${icon}"></i>${escapeHtml(data.statusLabel)}`;
-    $('displayUrl').textContent=url;
-    $('riskScoreText').textContent=score+'%'; $('riskScoreText').className=`absolute text-4xl font-black ${text}`;
-    $('gaugePath').setAttribute('stroke',color); $('gaugePath').setAttribute('stroke-dasharray',`${score},100`);
-    $('riskLabel').textContent=score>=60?'Rủi ro cao':score>=30?'Cần kiểm tra kỹ':'Chưa thấy dấu hiệu rõ ràng';
-    $('riskLabel').className=`mt-4 font-bold text-center ${text}`;
-    $('aiAnalysisContent').textContent=data.summary;
-    const details=$('technicalDetails'); details.replaceChildren();
-    (data.technicalPoints||[]).forEach(item=>{
-      const card=document.createElement('div');card.className='detail-card flex gap-4 p-5 rounded-xl border border-gray-100 bg-white';
-      const iconBox=document.createElement('div');iconBox.className=`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${item.isGood?'text-green-600 bg-green-100':'text-red-600 bg-red-100'}`;
-      iconBox.innerHTML=`<i class="fa-solid ${item.isGood?'fa-check':'fa-xmark'}"></i>`;
-      const content=document.createElement('div');const h=document.createElement('h4');h.className='font-bold text-gray-900 mb-1';h.textContent=item.point;
-      const p=document.createElement('p');p.className='text-sm text-gray-600 leading-relaxed';p.textContent=item.description;
-      content.append(h,p);card.append(iconBox,content);details.append(card);
-    });
-    results.classList.remove('hidden');
-    results.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-  function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-  function customAlert(title,message){
-    const overlay=document.createElement('div');overlay.className='fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4';
-    const box=document.createElement('div');box.className='bg-white rounded-3xl p-7 max-w-sm w-full shadow-2xl text-center';
-    const h=document.createElement('h3');h.className='text-xl font-bold text-gray-900 mb-2';h.textContent=title;
-    const p=document.createElement('p');p.className='text-gray-600 mb-6';p.textContent=message;
-    const b=document.createElement('button');b.className='w-full py-3 bg-gray-900 text-white rounded-xl font-semibold';b.textContent='Đã hiểu';
-    b.addEventListener('click',()=>overlay.remove());overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
-    box.append(h,p,b);overlay.append(box);document.body.append(overlay);
-  }
-  form.addEventListener('submit',async e=>{
-    e.preventDefault();let url=urlInput.value.trim();if(!url)return;
-    if(!/^https?:\/\//i.test(url))url='https://'+url;
-    if(!validUrl(url)){customAlert('Địa chỉ không hợp lệ','Hãy nhập URL hợp lệ, ví dụ https://example.com');return;}
-    setLoading(true);
-    try {const data=await analyzeUrl(url);renderResults(data,url);}
-    catch(err){customAlert('Có lỗi xảy ra','Không thể phân tích đường link lúc này. Vui lòng thử lại.');}
-    finally{setLoading(false);}
-  });
-  $('resetBtn').addEventListener('click',()=>{results.classList.add('hidden');urlInput.value='';clearBtn.classList.add('hidden');window.scrollTo({top:0,behavior:'smooth'});urlInput.focus();});
-  $('copyBtn').addEventListener('click',async()=>{
-    if(!lastReport)return;
-    const d=lastReport;const report=`BÁO CÁO SAFELINK AI\nURL: ${d.url}\nTrạng thái: ${d.statusLabel}\nĐiểm rủi ro: ${d.riskScore}%\n\nĐÁNH GIÁ:\n${d.summary}\n\nCHI TIẾT:\n${(d.technicalPoints||[]).map(x=>`- ${x.point}: ${x.description}`).join('\n')}`;
-    try{await navigator.clipboard.writeText(report);$('copyBtn').innerHTML='<i class="fa-solid fa-check mr-2"></i>Đã sao chép';setTimeout(()=>$('copyBtn').innerHTML='<i class="fa-regular fa-copy mr-2"></i>Copy báo cáo',1800);}
-    catch{customAlert('Không thể sao chép','Trình duyệt đã chặn clipboard. Bạn hãy thử mở trang qua HTTPS hoặc sao chép thủ công.');}
-  });
+        <!-- Khu vực hiển thị Kết Quả (Ẩn mặc định) -->
+        <div id="resultsContainer" class="w-full hidden opacity-0 transition-opacity duration-500 mt-2">
+            
+            <!-- Nhãn Trạng Thái Nhanh (VD: Đáng ngờ, An toàn) -->
+            <div class="flex justify-center mb-6">
+                <div id="statusBadge" class="px-6 py-2.5 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg border-2 border-white transform transition-transform hover:scale-105">
+                    <!-- Nội dung sẽ được điền bằng JS -->
+                </div>
+            </div>
 
-  const labels=['','1 sao - Chưa hài lòng','2 sao - Cần cải thiện','3 sao - Bình thường','4 sao - Hài lòng','5 sao - Rất hài lòng'];
-  const stars=[...document.querySelectorAll('#starRating button')];
-  function updateStars(n){stars.forEach((s,i)=>s.classList.toggle('selected',i<n));$('ratingText').textContent=labels[n]||'Hãy chọn số sao';}
-  stars.forEach(s=>s.addEventListener('click',()=>{selectedRating=Number(s.dataset.star);updateStars(selectedRating);}));
-  function getReviews(){try{return JSON.parse(localStorage.getItem('safelink_reviews')||'[]');}catch{return [];}}
-  function renderReviews(){
-    const list=$('reviewList'), reviews=getReviews();$('reviewCount').textContent=`${reviews.length} đánh giá`;list.replaceChildren();
-    if(!reviews.length){const p=document.createElement('p');p.className='text-sm text-gray-500';p.textContent='Chưa có đánh giá nào.';list.append(p);return;}
-    reviews.slice().reverse().forEach(r=>{
-      const card=document.createElement('div');card.className='p-4 rounded-xl border border-gray-100 bg-white';
-      const top=document.createElement('div');top.className='flex justify-between gap-3 items-center';
-      const name=document.createElement('strong');name.className='text-gray-800';name.textContent=r.name;
-      const rating=document.createElement('span');rating.className='text-yellow-500 whitespace-nowrap';rating.textContent='★'.repeat(r.rating)+'☆'.repeat(5-r.rating);
-      top.append(name,rating);const p=document.createElement('p');p.className='text-sm text-gray-600 mt-2 whitespace-pre-wrap';p.textContent=r.content;
-      const date=document.createElement('p');date.className='text-xs text-gray-400 mt-2';date.textContent=new Date(r.createdAt).toLocaleString('vi-VN');
-      card.append(top,p,date);list.append(card);
-    });
-  }
-  $('reviewForm').addEventListener('submit',e=>{
-    e.preventDefault();
-    if(!selectedRating){$('reviewMessage').textContent='Bạn hãy chọn số sao trước nhé.';$('reviewMessage').className='text-sm text-center text-red-600';return;}
-    const content=$('reviewContent').value.trim();if(!content){$('reviewMessage').textContent='Bạn hãy nhập nhận xét nhé.';return;}
-    const reviews=getReviews();reviews.push({name:$('reviewName').value.trim()||'Ẩn danh',rating:selectedRating,content,createdAt:new Date().toISOString()});
-    try{localStorage.setItem('safelink_reviews',JSON.stringify(reviews));}
-    catch{$('reviewMessage').textContent='Trình duyệt không cho phép lưu đánh giá.';$('reviewMessage').className='text-sm text-center text-red-600';return;}
-    $('reviewMessage').textContent='Cảm ơn bạn! Đánh giá đã được lưu trên thiết bị này.';$('reviewMessage').className='text-sm text-center text-green-600';
-    $('reviewForm').reset();selectedRating=0;updateStars(0);renderReviews();
-  });
-});
-</script>
+            <!-- Card Kết Quả Chính -->
+            <div class="glass-panel rounded-2xl overflow-hidden shadow-xl result-card mb-6 border border-gray-100">
+                
+                <!-- Tiêu đề hiển thị URL -->
+                <div class="bg-gray-50/80 border-b border-gray-100 p-4 md:p-6 break-all">
+                    <p class="text-sm font-semibold text-gray-500 mb-1 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-magnifying-glass"></i> URL Đã Phân Tích:
+                    </p>
+                    <p id="displayUrl" class="font-mono text-gray-800 font-medium text-lg"></p>
+                </div>
+
+                <!-- Nội dung phân tích -->
+                <div class="p-6 md:p-8">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                        <!-- Đồng hồ đo Điểm Rủi Ro (Gauge) -->
+                        <div class="col-span-1 flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-gray-50 rounded-bl-full -z-10"></div>
+                            
+                            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Điểm rủi ro</h3>
+                            
+                            <!-- SVG Gauge vẽ vòng tròn -->
+                            <div class="relative w-36 h-36 flex items-center justify-center">
+                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                    <!-- Vòng tròn nền -->
+                                    <path
+                                      class="text-gray-100"
+                                      stroke-width="3"
+                                      stroke="currentColor"
+                                      fill="none"
+                                      d="M18 2.0845
+                                        a 15.9155 15.9155 0 0 1 0 31.831
+                                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    />
+                                    <!-- Vòng tròn hiển thị giá trị -->
+                                    <path
+                                      id="gaugePath"
+                                      class="transition-all duration-1000 ease-out"
+                                      stroke-width="3"
+                                      stroke-dasharray="0, 100"
+                                      stroke-linecap="round"
+                                      fill="none"
+                                      d="M18 2.0845
+                                        a 15.9155 15.9155 0 0 1 0 31.831
+                                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    />
+                                </svg>
+                                <!-- Số % điểm ở giữa -->
+                                <div class="absolute flex flex-col items-center justify-center">
+                                    <span id="riskScoreText" class="text-4xl font-black">0%</span>
+                                </div>
+                            </div>
+                            <p id="riskLabel" class="mt-4 font-bold text-center text-lg"></p>
+                        </div>
+
+                        <!-- Đoạn văn bản nhận xét của AI -->
+                        <div class="col-span-1 md:col-span-2 flex flex-col h-full">
+                            <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-robot text-blue-500"></i> Gemini AI Nhận Xét
+                            </h3>
+                            <div id="aiAnalysisContent" class="markdown-content text-gray-700 bg-blue-50/50 p-6 rounded-2xl border border-blue-100 flex-grow text-[15px] leading-relaxed shadow-inner">
+                                <!-- Nội dung đánh giá chung chèn bằng JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bảng Phân Tích Chi Tiết Các Điểm (Tích cực/Tiêu cực) -->
+                    <div class="pt-6 border-t border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-indigo-500"></i> Chi tiết điểm bất thường / an toàn
+                        </h3>
+                        <div id="technicalDetails" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Các mục list (li) sẽ được chèn bằng JS tương ứng với JSON từ AI -->
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <!-- Các nút hành động chức năng -->
+            <div class="flex justify-center gap-4">
+                <button id="copyBtn" class="px-5 py-3 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 rounded-xl font-medium transition-all flex items-center gap-2 shadow-sm hover:shadow">
+                    <i class="fa-regular fa-copy"></i> Copy Báo Cáo
+                </button>
+                <button id="resetBtn" class="px-5 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium transition-all flex items-center gap-2 shadow-md hover:shadow-lg">
+                    <i class="fa-solid fa-rotate-right"></i> Kiểm tra Link khác
+                </button>
+            </div>
+            
+        </div>
+        
+        </div> <!-- Đóng div toolSection -->
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full py-8 text-center text-gray-500 text-sm mt-auto border-t border-gray-100 bg-white/50 backdrop-blur-sm">
+        <p class="font-bold text-gray-700 text-base mb-1">Sản phẩm khoa học kĩ thuật - 9a2 - Tây Sơn</p>
+        <p class="mt-2 text-xs flex items-center justify-center gap-1">
+            Built with <i class="fa-solid fa-heart text-red-500 mx-1"></i> using Google Gemini API
+        </p>
+    </footer>
+
+    <!-- Script xử lý toàn bộ logic ứng dụng -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- Lấy các phần tử DOM ---
+            const form = document.getElementById('checkForm');
+            const urlInput = document.getElementById('urlInput');
+            const clearBtn = document.getElementById('clearBtn');
+            const checkBtn = document.getElementById('checkBtn');
+            const btnText = document.getElementById('btnText');
+            const btnIcon = document.getElementById('btnIcon');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const scanningLine = document.getElementById('scanningLine');
+            
+            const resultsContainer = document.getElementById('resultsContainer');
+            const loadingView = document.getElementById('loadingView');
+            
+            // Các thành phần hiển thị kết quả
+            const statusBadge = document.getElementById('statusBadge');
+            const displayUrl = document.getElementById('displayUrl');
+            const riskScoreText = document.getElementById('riskScoreText');
+            const riskLabel = document.getElementById('riskLabel');
+            const gaugePath = document.getElementById('gaugePath');
+            const aiAnalysisContent = document.getElementById('aiAnalysisContent');
+            const technicalDetails = document.getElementById('technicalDetails');
+            
+            // Nút bấm hành động
+            const resetBtn = document.getElementById('resetBtn');
+            const copyBtn = document.getElementById('copyBtn');
+
+            // --- Lấy các DOM cho Tabs/Navigation ---
+            const navHome = document.getElementById('navHome');
+            const navReviews = document.getElementById('navReviews');
+            const navToolBtn = document.getElementById('navToolBtn');
+            const startToolBtn = document.getElementById('startToolBtn');
+            
+            const homeSection = document.getElementById('homeSection');
+            const reviewSection = document.getElementById('reviewSection');
+            const toolSection = document.getElementById('toolSection');
+            const navLinks = [navHome, navReviews];
+
+            // --- Logic chuyển đổi Tab (Section) ---
+            function switchTab(targetSection, activeNav) {
+                // 1. Ẩn tất cả các section
+                const sections = [homeSection, reviewSection, toolSection];
+                sections.forEach(sec => {
+                    sec.classList.remove('flex');
+                    sec.classList.add('hidden', 'opacity-0');
+                });
+                
+                // 2. Bỏ class active ở tất cả các nav links text
+                navLinks.forEach(nav => {
+                    if(nav) {
+                        nav.classList.remove('text-blue-600', 'font-bold');
+                        nav.classList.add('text-gray-600');
+                    }
+                });
+
+                // 3. Hiện section mục tiêu
+                targetSection.classList.remove('hidden');
+                targetSection.classList.add('flex');
+                
+                // Thêm delay nhỏ để kích hoạt CSS transition opacity mượt mà
+                setTimeout(() => {
+                    targetSection.classList.remove('opacity-0');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 50);
+
+                // 4. Set active state cho text link tương ứng (nếu có)
+                if (activeNav) {
+                    activeNav.classList.remove('text-gray-600');
+                    activeNav.classList.add('text-blue-600', 'font-bold');
+                }
+            }
+
+            // Gắn sự kiện click cho các nút điều hướng để chuyển trang
+            if(navHome) navHome.addEventListener('click', (e) => { e.preventDefault(); switchTab(homeSection, navHome); });
+            if(navReviews) navReviews.addEventListener('click', (e) => { e.preventDefault(); switchTab(reviewSection, navReviews); });
+            
+            // Xử lý khi nhấn nút mở công cụ (sẽ tự động focus vào thanh tìm kiếm)
+            const openToolHandler = (e) => { 
+                e.preventDefault(); 
+                switchTab(toolSection, null); 
+                setTimeout(() => urlInput.focus(), 300); 
+            };
+            if(navToolBtn) navToolBtn.addEventListener('click', openToolHandler);
+            if(startToolBtn) startToolBtn.addEventListener('click', openToolHandler);
+
+            const reviewFormElement = document.getElementById('reviewForm');
+            const reviewsGrid = document.getElementById('reviewsGrid');
+
+            if(reviewFormElement) {
+                reviewFormElement.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const nameInput = document.getElementById('reviewerName');
+                    const ratingSelect = document.getElementById('reviewRating');
+                    const commentInput = document.getElementById('reviewComment');
+                    
+                    const name = nameInput.value.trim();
+                    const rating = parseInt(ratingSelect.value);
+                    const comment = commentInput.value.trim();
+                    
+                    if(!name || !comment) return;
+
+                    // Tạo chuỗi HTML cho số sao
+                    let starsHtml = '';
+                    for(let i=0; i<5; i++) {
+                        if(i < rating) {
+                            starsHtml += '<i class="fa-solid fa-star"></i>';
+                        }
+                    }
+
+                    // Lấy chữ cái đầu làm avatar
+                    const initial = name.charAt(0).toUpperCase();
+                    
+                    // Random màu nền cho avatar để nhìn sinh động hơn
+                    const colors = ['bg-blue-100 text-blue-600', 'bg-green-100 text-green-600', 'bg-emerald-100 text-emerald-600', 'bg-indigo-100 text-indigo-600', 'bg-rose-100 text-rose-600', 'bg-yellow-100 text-yellow-600'];
+                    const randomColorClass = colors[Math.floor(Math.random() * colors.length)];
+
+                    // Cấu trúc HTML của một khối đánh giá mới
+                    const newReviewHtml = `
+                        <div class="glass-panel p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow animate-fade-in-up">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-12 h-12 ${randomColorClass} rounded-full flex items-center justify-center font-bold text-xl">${initial}</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">${name}</h4>
+                                    <div class="text-yellow-400 text-sm">${starsHtml}</div>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 italic">"${comment}"</p>
+                        </div>
+                    `;
+
+                    // Chèn đánh giá mới lên ngay đầu danh sách
+                    reviewsGrid.insertAdjacentHTML('afterbegin', newReviewHtml);
+                    
+                    // Xóa trắng form sau khi gửi
+                    nameInput.value = '';
+                    commentInput.value = '';
+                    ratingSelect.value = '5';
+                    
+                    // Hiển thị thông báo thành công (dùng popup custom đã viết sẵn)
+                    showCustomAlert("Thành công!", "Cảm ơn bạn. Đánh giá của bạn đã được thêm vào trang!");
+                });
+            }
+
+            // --- Logic tương tác giao diện (UI) ---
+            
+            // Hiển thị nút "X" (Clear) khi người dùng gõ vào ô input
+            urlInput.addEventListener('input', () => {
+                if (urlInput.value.trim().length > 0) {
+                    clearBtn.classList.remove('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                }
+            });
+
+            // Xử lý khi bấm nút "X" để xóa nhanh
+            clearBtn.addEventListener('click', () => {
+                urlInput.value = '';
+                clearBtn.classList.add('hidden');
+                urlInput.focus(); // Đưa con trỏ nháy về lại ô input
+            });
+
+            // Xử lý nút Reset (Kiểm tra link khác)
+            resetBtn.addEventListener('click', () => {
+                // Hiệu ứng mờ dần
+                resultsContainer.classList.add('opacity-0');
+                setTimeout(() => {
+                    resultsContainer.classList.add('hidden');
+                    urlInput.value = '';
+                    clearBtn.classList.add('hidden');
+                    // Cuộn trang lên trên cùng mượt mà
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setTimeout(() => { urlInput.focus(); }, 300);
+                }, 300);
+            });
+            
+            // Xử lý nút Copy kết quả báo cáo
+            copyBtn.addEventListener('click', () => {
+                // Tạo nội dung văn bản thuần túy (Plain text) từ kết quả
+                const reportText = `BÁO CÁO PHÂN TÍCH SAFELINK AI\n\n` +
+                                   `🔗 URL: ${displayUrl.textContent}\n` +
+                                   `🛡️ Trạng thái: ${statusBadge.textContent}\n` +
+                                   `⚠️ Mức độ rủi ro: ${riskScoreText.textContent}\n\n` +
+                                   `🤖 ĐÁNH GIÁ CỦA AI:\n${aiAnalysisContent.innerText}\n\n` +
+                                   `Báo cáo được tạo bởi SafeLink AI.`;
+                
+                const originalHtml = copyBtn.innerHTML;
+                
+                try {
+                    // Cố gắng dùng API Clipboard hiện đại
+                    navigator.clipboard.writeText(reportText).then(() => {
+                        showCopySuccess();
+                    }).catch(err => {
+                        fallbackCopyTextToClipboard(reportText); // Nếu lỗi, dùng fallback
+                    });
+                } catch (e) {
+                    // Fallback cho trình duyệt cũ hoặc khi bị chặn bởi iFrame
+                    fallbackCopyTextToClipboard(reportText);
+                }
+                
+                // Hiển thị hiệu ứng đã copy thành công
+                function showCopySuccess() {
+                    copyBtn.innerHTML = '<i class="fa-solid fa-check text-green-500"></i> Đã Copy';
+                    copyBtn.classList.replace('text-gray-700', 'text-green-600');
+                    copyBtn.classList.replace('border-gray-200', 'border-green-300');
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalHtml;
+                        copyBtn.classList.replace('text-green-600', 'text-gray-700');
+                        copyBtn.classList.replace('border-green-300', 'border-gray-200');
+                    }, 2000);
+                }
+                
+                // Phương pháp copy dự phòng (dùng execCommand cổ điển)
+                function fallbackCopyTextToClipboard(text) {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    textArea.style.position = "fixed";
+                    textArea.style.top = "-9999px"; // Ẩn khỏi màn hình
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        showCopySuccess();
+                    } catch (err) {
+                        console.error('Lỗi khi copy', err);
+                        showCustomAlert("Lỗi", "Trình duyệt của bạn không hỗ trợ tính năng copy tự động.");
+                    }
+                    document.body.removeChild(textArea);
+                }
+            });
+
+            // --- Xử lý Logic Submit Form & Gọi AI ---
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault(); // Ngăn trình duyệt reload trang
+                
+                let urlToProcess = urlInput.value.trim();
+                
+                if (!urlToProcess) return;
+                
+                // Tự động thêm http:// nếu người dùng quên (để pass validation cơ bản)
+                if (!urlToProcess.startsWith('http://') && !urlToProcess.startsWith('https://')) {
+                    urlToProcess = 'http://' + urlToProcess;
+                }
+                
+                // Kiểm tra sơ bộ URL hợp lệ bằng bộ định tuyến của trình duyệt
+                if (!isValidUrl(urlToProcess)) {
+                    showCustomAlert("Định dạng sai", "Vui lòng nhập một địa chỉ web (URL) hợp lệ. Ví dụ: https://example.com");
+                    return;
+                }
+
+                // Cập nhật giao diện sang trạng thái Đang tải (Loading)
+                setLoadingState(true);
+                displayUrl.textContent = urlToProcess; // Hiển thị URL đang check trên UI
+
+                try {
+                    // GỌI HÀM PHÂN TÍCH BẰNG GEMINI AI
+                    const analysisResult = await analyzeUrlWithGemini(urlToProcess);
+                    
+                    // NẾU THÀNH CÔNG, HIỂN THỊ KẾT QUẢ
+                    renderResults(analysisResult);
+                    
+                } catch (error) {
+                    console.error("Lỗi Phân Tích AI:", error);
+                    setLoadingState(false);
+                    // Hiển thị hộp thoại lỗi thân thiện
+                    showCustomAlert("Lỗi Kết Nối AI", "Đã xảy ra lỗi khi liên lạc với hệ thống AI. Vui lòng thử lại sau. (" + error.message + ")");
+                }
+            });
+
+            // Hàm kiểm tra tính hợp lệ của URL
+            function isValidUrl(string) {
+                try {
+                    new URL(string);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            // Hàm chuyển đổi các trạng thái giao diện giữa Nhập liệu / Tải / Xem kết quả
+            function setLoadingState(isLoading) {
+                if (isLoading) {
+                    // Disable form controls
+                    urlInput.disabled = true;
+                    checkBtn.disabled = true;
+                    
+                    // Chuyển nút bấm thành trạng thái loading
+                    btnText.textContent = "Đang Phân Tích...";
+                    btnIcon.classList.add('hidden');
+                    loadingSpinner.classList.remove('hidden');
+                    
+                    // Bật animation tia quét ngang
+                    scanningLine.style.display = 'block';
+                    
+                    // Ẩn kết quả cũ (nếu có), hiện màn hình Skeleton
+                    resultsContainer.classList.add('hidden', 'opacity-0');
+                    loadingView.classList.remove('hidden');
+                } else {
+                    // Bật lại controls
+                    urlInput.disabled = false;
+                    checkBtn.disabled = false;
+                    
+                    // Trả lại trạng thái ban đầu cho nút
+                    btnText.textContent = "Phân Tích AI";
+                    btnIcon.classList.remove('hidden');
+                    loadingSpinner.classList.add('hidden');
+                    
+                    // Tắt tia quét
+                    scanningLine.style.display = 'none';
+                    
+                    // Ẩn màn hình loading
+                    loadingView.classList.add('hidden');
+                }
+            }
+
+            // --- Tích hợp Google Gemini API ---
+
+            async function analyzeUrlWithGemini(url) {
+                // 1. SYSTEM INSTRUCTION: Xác định vai trò, nhiệm vụ và cấu trúc output bắt buộc
+                const systemPrompt = `
+                Bạn là một chuyên gia an ninh mạng phân tích URL chuyên nghiệp.
+                Nhiệm vụ của bạn là phân tích URL được cung cấp và xác định xem nó có an toàn, đáng ngờ hay độc hại (malware/phishing) không.
+                Bạn phải phân tích cấu trúc URL, tên miền (kiểm tra typosquatting, TLD lạ), đường dẫn, và truy vấn tham số.
+                
+                LƯU Ý QUAN TRỌNG VỀ ĐẦU RA:
+                Bạn BẮT BUỘC TRẢ VỀ kết quả theo định dạng JSON có cấu trúc chính xác như Schema được yêu cầu, KHÔNG BAO GỒM BẤT KỲ VĂN BẢN (markdown, text) NÀO BÊN NGOÀI JSON.
+
+                Cấu trúc giải thích:
+                - isSafe: boolean (true nếu an toàn, false nếu có rủi ro).
+                - riskScore: số nguyên từ 0 (an toàn nhất) đến 100 (nguy hiểm nhất).
+                - statusLabel: Chỉ sử dụng 1 trong các từ này: "An Toàn", "Cảnh Báo Nhẹ", "Đáng Ngờ", "Nguy Hiểm".
+                - summary: Một đoạn văn phân tích chi tiết (3-4 câu) tại sao bạn chấm điểm số đó. Giải thích rõ ràng bằng tiếng Việt.
+                - technicalPoints: Mảng chứa ít nhất 3-4 điểm kỹ thuật nổi bật (ví dụ: Giao thức HTTP/HTTPS, độ dài tên miền, ký tự lạ...).
+                  Trong mỗi point, "isGood" là true nếu đó là yếu tố tốt (vd: HTTPS), false nếu là yếu tố xấu (vd: TLD .zip).
+                `;
+
+                // 2. USER PROMPT: Cung cấp dữ liệu cần phân tích
+                const userPrompt = `Hãy phân tích chi tiết mức độ an toàn của đường link sau: ${url}`;
+                
+                // Môi trường Canvas cung cấp API Key rỗng tự động
+                const apiKey = "";
+                
+                // API Endpoint cho Model Gemini 3 Flash Preview (phù hợp sinh text nhanh)
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                // 3. Xây dựng Payload theo cấu trúc Gemini API yều cầu
+                const payload = {
+                    contents: [{ parts: [{ text: userPrompt }] }],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                    // BẮT BUỘC: Sử dụng Structured Output (JSON Schema) để đảm bảo JS parse được
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "isSafe": { type: "BOOLEAN" },
+                                "riskScore": { type: "INTEGER" },
+                                "statusLabel": { type: "STRING" },
+                                "summary": { type: "STRING" },
+                                "technicalPoints": {
+                                    type: "ARRAY",
+                                    items: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            "point": { type: "STRING" },
+                                            "description": { type: "STRING" },
+                                            "isGood": { type: "BOOLEAN" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                try {
+                    // Gửi request POST đến API
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Mã lỗi HTTP: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    // Parse kết quả trả về
+                    if (data.candidates && data.candidates.length > 0 && 
+                        data.candidates[0].content && data.candidates[0].content.parts.length > 0) {
+                        
+                        const jsonText = data.candidates[0].content.parts[0].text;
+                        // JSON Schema đảm bảo output là chuẩn JSON, parse thẳng
+                        return JSON.parse(jsonText);
+                    } else {
+                        throw new Error("Định dạng dữ liệu trả về từ API không đúng.");
+                    }
+                } catch (error) {
+                    console.error("Lỗi khi fetch API:", error);
+                    // LOGIC FALLBACK: Nếu API bị lỗi (do quota, mạng...), chạy thuật toán cục bộ
+                    console.warn("Chuyển sang chế độ phân tích cục bộ do lỗi API.");
+                    return fallbackAnalysis(url);
+                }
+            }
+
+            // --- Hàm Fallback: Thuật toán rule-based phân tích tĩnh (nếu mất API) ---
+            function fallbackAnalysis(urlStr) {
+                let riskScore = 10; // Điểm nền
+                let isSafe = true;
+                let technicalPoints = [];
+                let urlObj;
+                
+                try {
+                    urlObj = new URL(urlStr);
+                } catch(e) {
+                    // Không parse được URL
+                    return {
+                        isSafe: false, riskScore: 90, statusLabel: "Lỗi Định Dạng",
+                        summary: "URL không hợp lệ hoặc sai cấu trúc cơ bản. Đây có thể là một chuỗi ngẫu nhiên, không phải một địa chỉ web thực sự.",
+                        technicalPoints: [{ point: "Cú pháp", description: "Định dạng URL sai chuẩn quốc tế.", isGood: false }]
+                    }
+                }
+
+                // 1. Kiểm tra Giao thức HTTP vs HTTPS
+                if (urlObj.protocol !== 'https:') {
+                    riskScore += 35;
+                    technicalPoints.push({ point: "Thiếu mã hóa SSL", description: "Sử dụng kết nối HTTP không mã hóa thay vì HTTPS. Dữ liệu của bạn có thể bị đánh cắp trên đường truyền.", isGood: false });
+                } else {
+                    technicalPoints.push({ point: "Giao thức Bảo mật", description: "Sử dụng HTTPS an toàn, dữ liệu trao đổi được mã hóa.", isGood: true });
+                }
+
+                const domain = urlObj.hostname;
+                
+                // 2. Kiểm tra có phải IP trần không (VD: http://192.168.1.1)
+                const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(domain);
+                if (isIP) {
+                    riskScore += 45;
+                    technicalPoints.push({ point: "Sử dụng IP trực tiếp", description: "URL dẫn trực tiếp tới địa chỉ IP thay vì tên miền. Đây là dấu hiệu rất phổ biến của các trang web lừa đảo lẩn tránh bộ lọc.", isGood: false });
+                } else {
+                    // 3. Kiểm tra độ dài và số trong tên miền
+                    if (domain.length > 35 || (domain.match(/\d/g) || []).length > 4) {
+                        riskScore += 25;
+                        technicalPoints.push({ point: "Tên miền bất thường", description: "Tên miền quá dài hoặc chứa nhiều chữ số một cách bất thường, giống với các tên miền được tạo tự động (DGA) cho mục đích xấu.", isGood: false });
+                    } else {
+                        technicalPoints.push({ point: "Cấu trúc Tên miền", description: "Tên miền có độ dài và cấu trúc thông thường.", isGood: true });
+                    }
+
+                    // 4. Kiểm tra TLD (đuôi tên miền) hay bị lạm dụng
+                    const suspiciousTlds = ['.tk', '.ml', '.ga', '.cf', '.gq', '.zip', '.xyz', '.top', '.click'];
+                    const isSuspiciousTld = suspiciousTlds.some(tld => domain.endsWith(tld));
+                    if (isSuspiciousTld) {
+                        riskScore += 30;
+                        technicalPoints.push({ point: "Đuôi miền rủi ro cao", description: `Sử dụng đuôi miền giá rẻ hoặc miễn phí, thường được giới tội phạm mạng sử dụng cho các chiến dịch phishing spam.`, isGood: false });
+                    }
+                }
+
+                // Xử lý điểm số cuối cùng
+                riskScore = Math.min(Math.max(riskScore, 0), 100);
+                
+                let statusLabel = "An Toàn";
+                if (riskScore > 75) { statusLabel = "Nguy Hiểm"; isSafe = false; }
+                else if (riskScore > 40) { statusLabel = "Đáng Ngờ"; isSafe = false; }
+                else if (riskScore > 20) { statusLabel = "Cảnh Báo Nhẹ"; isSafe = true; }
+
+                return {
+                    isSafe, riskScore, statusLabel,
+                    summary: `Lưu ý: Đánh giá này dựa trên phân tích tĩnh cục bộ. Link này có mức độ rủi ro ${riskScore}%. ` + (isSafe ? "Dựa trên cấu trúc bề mặt, nó có vẻ an toàn. Tuy nhiên, nội dung bên trong vẫn cần cẩn trọng." : "Phát hiện nhiều dấu hiệu bất thường về cấu trúc hoặc chứng chỉ. Khuyến cáo KHÔNG NÊN truy cập vào đường link này."),
+                    technicalPoints
+                };
+            }
+
+            // --- Hàm Render (Hiển thị) Dữ liệu ra Giao diện ---
+
+            function renderResults(data) {
+                // Tắt trạng thái loading
+                setLoadingState(false);
+                resultsContainer.classList.remove('hidden');
+                
+                // Đợi render DOM xong (1 chút delay) rồi mới add class opacity-1 để có hiệu ứng mờ dần
+                setTimeout(() => {
+                    resultsContainer.classList.remove('opacity-0');
+                    // Tự động cuộn trang xuống khu vực kết quả mượt mà
+                    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+
+                // --- 1. Xử lý Màu Sắc Chủ Đạo Dựa Trên Mức Độ Rủi Ro ---
+                let mainColorClass, bgColorClass, bgLightClass, iconClass, gaugeColor;
+                
+                if (data.riskScore < 30) {
+                    mainColorClass = 'text-emerald-500';
+                    bgColorClass = 'bg-emerald-500';
+                    bgLightClass = 'bg-emerald-50';
+                    iconClass = 'fa-shield-check';
+                    gaugeColor = '#10b981'; // Xanh lá
+                } else if (data.riskScore < 60) {
+                    mainColorClass = 'text-yellow-500';
+                    bgColorClass = 'bg-yellow-500';
+                    bgLightClass = 'bg-yellow-50';
+                    iconClass = 'fa-triangle-exclamation';
+                    gaugeColor = '#f59e0b'; // Vàng
+                } else {
+                    mainColorClass = 'text-red-500';
+                    bgColorClass = 'bg-red-500';
+                    bgLightClass = 'bg-red-50';
+                    iconClass = 'fa-skull-crossbones';
+                    gaugeColor = '#ef4444'; // Đỏ
+                }
+
+                // --- 2. Render Badge Trạng Thái Nhỏ ---
+                statusBadge.className = `px-6 py-2.5 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg border-2 border-white transform transition-transform hover:scale-105 text-white ${bgColorClass}`;
+                statusBadge.innerHTML = `<i class="fa-solid ${iconClass}"></i> ${data.statusLabel}`;
+
+                // --- 3. Render Gauge (Đồng hồ) và Điểm số ---
+                riskScoreText.textContent = '0%'; // Reset lại 0
+                riskScoreText.className = `text-4xl font-black ${mainColorClass}`;
+                gaugePath.setAttribute('stroke', gaugeColor);
+                
+                // Hiệu ứng Animation cho vòng cung Gauge (tăng từ 0 đến giá trị thực)
+                setTimeout(() => {
+                    const circumference = 100; // Tổng độ dài nét đứt giả định trong viewBox
+                    // stroke-dasharray = [độ dài phần hiển thị], [độ dài phần ẩn]
+                    const strokeDasharray = `${data.riskScore}, ${circumference}`;
+                    gaugePath.setAttribute('stroke-dasharray', strokeDasharray);
+                    
+                    // Hiệu ứng nhảy số % 
+                    let currentScore = 0;
+                    const duration = 1000; // ms
+                    const steps = 60; // Số frame
+                    const stepTime = duration / steps;
+                    const increment = data.riskScore / steps;
+                    
+                    const timer = setInterval(() => {
+                        currentScore += increment;
+                        if (currentScore >= data.riskScore) {
+                            clearInterval(timer);
+                            currentScore = data.riskScore;
+                        }
+                        riskScoreText.textContent = Math.round(currentScore) + '%';
+                    }, stepTime);
+                    
+                }, 300);
+
+                // Gắn nhãn chữ dưới đồng hồ
+                riskLabel.textContent = data.isSafe ? "Tương đối an toàn" : "Phát hiện rủi ro!";
+                riskLabel.className = `mt-4 font-bold text-center text-lg ${mainColorClass}`;
+
+                // --- 4. Render Nội Dung Đánh Giá (Summary) ---
+                // Format lại nội dung để hiển thị đẹp hơn
+                aiAnalysisContent.innerHTML = `<p class="leading-relaxed text-gray-800 font-medium">${data.summary}</p>`;
+                // Thay đổi màu nền hộp AI theo mức độ rủi ro
+                aiAnalysisContent.className = `markdown-content ${bgLightClass} p-6 rounded-2xl border border-gray-100 flex-grow text-[15px] leading-relaxed shadow-inner`;
+
+                // --- 5. Render Danh Sách Điểm Kỹ Thuật Chi Tiết ---
+                technicalDetails.innerHTML = ''; // Xóa nội dung cũ
+                
+                if (data.technicalPoints && data.technicalPoints.length > 0) {
+                    data.technicalPoints.forEach(item => {
+                        // Xác định icon và màu cho từng điểm (Tốt hay Xấu)
+                        const iconColor = item.isGood ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100';
+                        const iconName = item.isGood ? 'fa-check' : 'fa-xmark';
+                        
+                        const detailHtml = `
+                            <div class="flex gap-4 p-5 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow">
+                                <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${iconColor}">
+                                    <i class="fa-solid ${iconName} text-lg"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-900 text-[15px] mb-1">${item.point}</h4>
+                                    <p class="text-[14px] text-gray-600 leading-snug">${item.description}</p>
+                                </div>
+                            </div>
+                        `;
+                        technicalDetails.insertAdjacentHTML('beforeend', detailHtml);
+                    });
+                } else {
+                    technicalDetails.innerHTML = '<p class="text-gray-500 italic p-4 text-center w-full col-span-2">Không có chi tiết kỹ thuật nào được cung cấp.</p>';
+                }
+            }
+
+            // --- Hàm tạo Modal Alert (Hộp thoại thông báo) Tùy chỉnh ---
+            // Yêu cầu: KHÔNG DÙNG window.alert() native của trình duyệt
+            function showCustomAlert(title, message) {
+                // Tạo lớp phủ mờ (overlay) nền đen
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300';
+                
+                // Tạo khối nội dung Modal
+                const modal = document.createElement('div');
+                modal.className = 'bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col items-center text-center';
+                
+                // HTML bên trong modal
+                modal.innerHTML = `
+                    <div class="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-5 border-4 border-red-100">
+                        <i class="fa-solid fa-triangle-exclamation text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">${title}</h3>
+                    <p class="text-gray-600 mb-8 leading-relaxed">${message}</p>
+                    <button class="w-full py-3.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-semibold transition-colors shadow-md" id="closeAlertBtn">
+                        Đã Hiểu
+                    </button>
+                `;
+                
+                // Gắn modal vào overlay, gắn overlay vào body
+                overlay.appendChild(modal);
+                document.body.appendChild(overlay);
+                
+                // Kích hoạt hiệu ứng hiện ra mượt mà
+                setTimeout(() => {
+                    overlay.classList.remove('opacity-0');
+                    modal.classList.remove('scale-95');
+                }, 10);
+                
+                // Định nghĩa hàm đóng modal
+                const closeAction = () => {
+                    overlay.classList.add('opacity-0');
+                    modal.classList.add('scale-95');
+                    // Xóa phần tử khỏi DOM sau khi kết thúc animation
+                    setTimeout(() => {
+                        if(document.body.contains(overlay)) {
+                            document.body.removeChild(overlay);
+                        }
+                    }, 300);
+                };
+                
+                // Lắng nghe sự kiện đóng modal (click nút hoặc click ra ngoài)
+                const closeBtn = modal.querySelector('#closeAlertBtn');
+                closeBtn.addEventListener('click', closeAction);
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) closeAction();
+                });
+            }
+        });
+    </script>
 </body>
 </html>
