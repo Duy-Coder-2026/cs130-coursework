@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LINKGUARD AI - Trình Kiểm Tra Liên Kết An Toàn - made by Anh Duy 9A2 TS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+body{font-family:Inter,sans-serif;background:#f8fafc;color:#334155}
+.glass-panel{background:rgba(255,255,255,.95);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.6);box-shadow:0 10px 25px rgba(0,0,0,.05)}
+.scanning-line{position:absolute;top:0;left:0;width:100%;height:2px;background:#3b82f6;box-shadow:0 0 10px #3b82f6;animation:scan 2s linear infinite;display:none;z-index:20}
+@keyframes scan{0%{top:0;opacity:0}10%,90%{opacity:1}100%{top:100%;opacity:0}}
+.skeleton{background:linear-gradient(110deg,#ececec 8%,#f5f5f5 18%,#ececec 33%);background-size:200% 100%;animation:shine 1.5s linear infinite;border-radius:5px}
+@keyframes shine{to{background-position-x:-200%}}
+.star-btn{color:#cbd5e1;transition:transform .15s,color .15s}.star-btn:hover{transform:scale(1.12);color:#facc15}.star-btn.selected{color:#facc15}
+.markdown-content p{margin-bottom:.75rem}.detail-card{transition:box-shadow .2s}.detail-card:hover{box-shadow:0 8px 18px #0f172a12}
+</style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden">
+<div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-100 mix-blend-multiply blur-3xl opacity-70 -z-10"></div>
+<div class="fixed top-[20%] right-[-10%] w-[35%] h-[35%] rounded-full bg-purple-100 mix-blend-multiply blur-3xl opacity-70 -z-10"></div>
+
+<header class="w-full py-5 px-4 md:px-8 bg-white/85 backdrop-blur-md border-b border-gray-100 sticky top-0 z-30">
+  <div class="max-w-6xl mx-auto flex justify-between items-center gap-3">
+    <button id="homeNav" class="flex items-center gap-3 text-left">
+      <span class="w-11 h-11 flex items-center justify-center bg-blue-600 rounded-xl text-white shadow-lg"><i class="fa-solid fa-shield-halved text-xl"></i></span>
+      <span><span class="block text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600">SafeLink AI</span><span class="block text-xs text-gray-500 font-medium tracking-wide uppercase">Bảo vệ & Phân tích</span></span>
+    </button>
+    <nav class="flex items-center gap-2 text-sm font-semibold">
+      <button id="homeButton" class="px-3 py-2 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition"><i class="fa-solid fa-house mr-1"></i><span class="hidden sm:inline">Trang chủ</span></button>
+      <button id="reviewNav" class="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition shadow-md"><i class="fa-solid fa-star mr-1"></i>Đánh giá</button>
+    </nav>
+  </div>
+</header>
+
+<main id="homeSection" class="flex-grow w-full max-w-4xl mx-auto px-4 py-10 md:py-12 flex flex-col items-center">
+  <section class="text-center mb-10 w-full">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium mb-6 border border-blue-100">
+      <span class="relative flex h-2 w-2"><span class="animate-ping absolute h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span>
+      Phân tích URL hỗ trợ AI
+    </div>
+    <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 leading-tight">Kiểm tra độ an toàn của<br class="hidden md:block"><span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">bất kỳ đường link nào</span></h1>
+    <p class="text-lg text-gray-600 max-w-2xl mx-auto">Phân tích dấu hiệu đáng ngờ trong URL để hỗ trợ nhận diện trang web lừa đảo (phishing), mã độc và các liên kết bất thường.</p>
+  </section>
+
+  <section class="w-full relative z-10 mb-10">
+    <div class="glass-panel p-2 rounded-2xl relative overflow-hidden shadow-xl">
+      <div id="scanningLine" class="scanning-line"></div>
+      <form id="checkForm" class="relative flex flex-col md:flex-row gap-2">
+        <div class="relative flex-grow flex items-center">
+          <i class="fa-solid fa-link absolute left-4 text-gray-400 text-xl"></i>
+          <input type="text" id="urlInput" placeholder="Dán đường link cần kiểm tra... (VD: https://example.com)" class="w-full pl-12 pr-12 py-4 rounded-xl bg-transparent text-gray-800 placeholder-gray-400 focus:outline-none text-base md:text-lg" required>
+          <button type="button" id="clearBtn" aria-label="Xóa đường link" class="absolute right-4 text-gray-400 hover:text-gray-700 hidden text-xl"><i class="fa-solid fa-circle-xmark"></i></button>
+        </div>
+        <button type="submit" id="checkBtn" class="px-7 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-lg transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-60">
+          <span id="btnText">Phân Tích</span><i id="btnIcon" class="fa-solid fa-wand-magic-sparkles"></i>
+          <i id="loadingSpinner" class="fa-solid fa-spinner fa-spin hidden"></i>
+        </button>
+      </form>
+    </div>
+    <p class="mt-4 text-center text-sm text-gray-500 bg-white/70 px-4 py-2 rounded-lg border border-gray-200/60"><i class="fa-solid fa-circle-info text-blue-500 mr-1"></i> Kết quả chỉ mang tính tham khảo; không nhập mật khẩu hoặc dữ liệu nhạy cảm vào trang lạ.</p>
+  </section>
+
+  <section id="loadingView" class="hidden w-full">
+    <div class="glass-panel p-6 md:p-8 rounded-2xl shadow-xl">
+      <div class="skeleton h-6 w-3/4 mb-6"></div><div class="skeleton h-4 w-full mb-3"></div><div class="skeleton h-4 w-5/6 mb-3"></div><div class="skeleton h-4 w-2/3"></div>
+      <p class="mt-7 text-center text-blue-600 font-medium"><i class="fa-solid fa-brain animate-pulse mr-2"></i>Đang phân tích dấu hiệu của đường link...</p>
+    </div>
+  </section>
+
+  <section id="resultsContainer" class="hidden w-full mt-2">
+    <div class="flex justify-center mb-6"><div id="statusBadge" class="px-6 py-2.5 rounded-full font-bold text-lg flex items-center gap-2 text-white shadow-lg"></div></div>
+    <div class="glass-panel rounded-2xl overflow-hidden shadow-xl mb-6">
+      <div class="bg-gray-50/80 border-b border-gray-100 p-4 md:p-6 break-all"><p class="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider"><i class="fa-solid fa-magnifying-glass mr-1"></i>URL đã phân tích</p><p id="displayUrl" class="font-mono text-gray-800 font-medium"></p></div>
+      <div class="p-6 md:p-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-7 mb-8">
+          <div class="flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-gray-100">
+            <h3 class="text-sm font-bold text-gray-500 uppercase mb-4">Điểm rủi ro</h3>
+            <div class="relative w-36 h-36 flex items-center justify-center">
+              <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36"><path stroke="#e5e7eb" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/><path id="gaugePath" stroke="#10b981" stroke-width="3" stroke-dasharray="0,100" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/></svg>
+              <span id="riskScoreText" class="absolute text-4xl font-black">0%</span>
+            </div>
+            <p id="riskLabel" class="mt-4 font-bold text-center"></p>
+          </div>
+          <div class="md:col-span-2">
+            <h3 class="text-lg font-bold text-gray-800 mb-3"><i class="fa-solid fa-robot text-blue-500 mr-2"></i>Nhận xét phân tích</h3>
+            <div id="aiAnalysisContent" class="bg-blue-50 p-5 rounded-2xl border border-blue-100 leading-relaxed"></div>
+          </div>
+        </div>
+        <div class="pt-6 border-t border-gray-100">
+          <h3 class="text-lg font-bold text-gray-800 mb-5"><i class="fa-solid fa-list-check text-indigo-500 mr-2"></i>Chi tiết dấu hiệu</h3>
+          <div id="technicalDetails" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap justify-center gap-3 mb-8">
+      <button id="copyBtn" class="px-5 py-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl font-medium"><i class="fa-regular fa-copy mr-2"></i>Copy báo cáo</button>
+      <button id="resetBtn" class="px-5 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium"><i class="fa-solid fa-rotate-right mr-2"></i>Kiểm tra link khác</button>
+    </div>
+  </section>
+</main>
+
+<section id="reviewSection" class="hidden flex-grow w-full max-w-2xl mx-auto px-4 py-10 md:py-14">
+  <div class="glass-panel rounded-2xl p-6 md:p-8 shadow-xl">
+    <div class="text-center mb-7">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 text-2xl mb-4"><i class="fa-solid fa-star"></i></div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900">Đánh giá SafeLink AI</h2>
+      <p class="text-gray-500 mt-2">Chia sẻ ý kiến để giúp công cụ ngày càng tốt hơn.</p>
+    </div>
+    <form id="reviewForm" class="space-y-5">
+      <div><label for="reviewName" class="block text-sm font-semibold text-gray-700 mb-2">Tên hiển thị (không bắt buộc)</label><input id="reviewName" maxlength="60" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none" placeholder="Ví dụ: Người dùng SafeLink"></div>
+      <div><p class="text-sm font-semibold text-gray-700 mb-3 text-center">Bạn chấm công cụ này mấy sao?</p>
+        <div id="starRating" class="flex justify-center gap-3 text-3xl" role="group" aria-label="Chọn số sao">
+          <button type="button" data-star="1" aria-label="1 sao" class="star-btn"><i class="fa-solid fa-star"></i></button>
+          <button type="button" data-star="2" aria-label="2 sao" class="star-btn"><i class="fa-solid fa-star"></i></button>
+          <button type="button" data-star="3" aria-label="3 sao" class="star-btn"><i class="fa-solid fa-star"></i></button>
+          <button type="button" data-star="4" aria-label="4 sao" class="star-btn"><i class="fa-solid fa-star"></i></button>
+          <button type="button" data-star="5" aria-label="5 sao" class="star-btn"><i class="fa-solid fa-star"></i></button>
+        </div><p id="ratingText" class="text-center text-sm text-gray-500 mt-2">Hãy chọn số sao</p>
+      </div>
+      <div><label for="reviewContent" class="block text-sm font-semibold text-gray-700 mb-2">Nhận xét</label><textarea id="reviewContent" rows="4" maxlength="1000" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-y" placeholder="Bạn thích điều gì? Có điều gì cần cải thiện?"></textarea></div>
+      <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg"><i class="fa-solid fa-paper-plane mr-2"></i>Gửi đánh giá</button>
+      <p id="reviewMessage" role="status" class="text-sm text-center"></p>
+    </form>
+    <div class="mt-8 pt-6 border-t border-gray-100">
+      <div class="flex items-center justify-between gap-3 mb-4"><h3 class="font-bold text-gray-800">Đánh giá trên thiết bị này</h3><span id="reviewCount" class="text-sm text-gray-500">0 đánh giá</span></div>
+      <div id="reviewList" class="space-y-3"><p class="text-sm text-gray-500">Chưa có đánh giá nào.</p></div>
+      <p class="text-xs text-gray-400 mt-4">Đánh giá được lưu trên trình duyệt hiện tại, không tự động gửi lên máy chủ và không hiển thị trên thiết bị khác.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="w-full py-7 text-center text-gray-500 text-sm mt-auto border-t border-gray-100 bg-white/60">
+  <p class="font-bold text-gray-700 uppercase tracking-wide">LINKGUARD AI — SẢN PHẨM KHOA HỌC KĨ THUẬT 2026</p>
+  <p class="mt-2">Công cụ hỗ trợ kiểm tra liên kết; không thể bảo đảm phát hiện mọi trang web độc hại.</p>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const $ = id => document.getElementById(id);
+  const form = $('checkForm'), urlInput = $('urlInput'), clearBtn = $('clearBtn');
+  const checkBtn = $('checkBtn'), btnText = $('btnText'), btnIcon = $('btnIcon'), spinner = $('loadingSpinner');
+  const scanningLine = $('scanningLine'), loadingView = $('loadingView'), results = $('resultsContainer');
+  const homeSection = $('homeSection'), reviewSection = $('reviewSection');
+  let lastReport = null, selectedRating = 0;
+
+  function showHome() {
+    reviewSection.classList.add('hidden');
+    homeSection.classList.remove('hidden');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function showReviews() {
+    homeSection.classList.add('hidden');
+    reviewSection.classList.remove('hidden');
+    reviewSection.scrollIntoView({behavior:'smooth',block:'start'});
+    renderReviews();
+  }
+  $('homeNav').addEventListener('click', showHome);
+  $('homeButton').addEventListener('click', showHome);
+  $('reviewNav').addEventListener('click', showReviews);
+
+  urlInput.addEventListener('input', () => clearBtn.classList.toggle('hidden', !urlInput.value.trim()));
+  clearBtn.addEventListener('click', () => {urlInput.value='';clearBtn.classList.add('hidden');urlInput.focus();});
+
+  function setLoading(on) {
+    urlInput.disabled = on; checkBtn.disabled = on;
+    btnText.textContent = on ? 'Đang phân tích...' : 'Phân Tích';
+    btnIcon.classList.toggle('hidden',on); spinner.classList.toggle('hidden',!on);
+    scanningLine.style.display = on ? 'block' : 'none';
+    loadingView.classList.toggle('hidden',!on);
+    if(on) results.classList.add('hidden');
+  }
+  function validUrl(value) {
+    try { const u = new URL(value); return (u.protocol==='http:' || u.protocol==='https:') && u.hostname.includes('.'); }
+    catch { return false; }
+  }
+  function fallbackAnalysis(url) {
+    let score=5; const points=[]; const u=new URL(url); const domain=u.hostname.toLowerCase();
+    if(u.protocol!=='https:'){score+=25;points.push({point:'Không dùng HTTPS',description:'Kết nối không được mã hóa bằng HTTPS. Điều này không tự chứng minh trang web là lừa đảo, nhưng cần thận trọng.',isGood:false});}
+    else points.push({point:'Có HTTPS',description:'Kết nối sử dụng HTTPS. Tuy nhiên, HTTPS không bảo đảm trang web đáng tin cậy.',isGood:true});
+    if(/^(?:\d{1,3}\.){3}\d{1,3}$/.test(domain)){score+=35;points.push({point:'Tên máy chủ là địa chỉ IP',description:'Đường link dùng địa chỉ IP thay cho tên miền; hãy xác minh nguồn gửi link.',isGood:false});}
+    if(domain.length>35 || (domain.match(/\d/g)||[]).length>4){score+=20;points.push({point:'Tên miền dài hoặc nhiều chữ số',description:'Đây có thể là dấu hiệu bất thường, nhưng không đủ để kết luận trang web độc hại.',isGood:false});}
+    const tlds=['.tk','.ml','.ga','.cf','.gq','.click'];
+    if(tlds.some(t=>domain.endsWith(t))){score+=20;points.push({point:'Đuôi tên miền cần thận trọng',description:'Một số đuôi miền bị lạm dụng trong các chiến dịch lừa đảo; cần kiểm tra thêm nguồn và nội dung.',isGood:false});}
+    if(u.username || u.password){score+=25;points.push({point:'URL chứa thông tin trước tên miền',description:'URL có phần username/password trước hostname. Đây là kỹ thuật có thể được dùng để đánh lừa người xem.',isGood:false});}
+    if(points.length<3) points.push({point:'Không phát hiện dấu hiệu cấu trúc nổi bật',description:'Phân tích tĩnh đơn giản không phát hiện thêm bất thường rõ ràng. Điều này không có nghĩa là link chắc chắn an toàn.',isGood:true});
+    score=Math.max(0,Math.min(100,score));
+    const status=score>=65?'Nguy Hiểm':score>=40?'Đáng Ngờ':score>=20?'Cảnh Báo Nhẹ':'Chưa thấy dấu hiệu rõ ràng';
+    return {isSafe:score<40,riskScore:score,statusLabel:status,summary:'Đây là đánh giá tự động dựa trên cấu trúc URL, không phải kết quả quét toàn bộ website hoặc cơ sở dữ liệu mã độc. Điểm thấp không bảo đảm an toàn. Không đăng nhập, tải tệp hay nhập thông tin cá nhân nếu bạn chưa xác minh được nguồn gửi link.',technicalPoints:points};
+  }
+  async function analyzeUrl(url) {
+    // Để dùng Gemini thật, cần máy chủ trung gian giữ API key an toàn.
+    // Không đặt API key bí mật trực tiếp trong mã HTML công khai.
+    return fallbackAnalysis(url);
+  }
+  function renderResults(data,url) {
+    lastReport={...data,url};
+    const score=data.riskScore;
+    let color='#10b981', badge='bg-emerald-500', icon='fa-shield-halved', text='text-emerald-600';
+    if(score>=60){color='#ef4444';badge='bg-red-500';icon='fa-triangle-exclamation';text='text-red-600';}
+    else if(score>=30){color='#f59e0b';badge='bg-amber-500';icon='fa-circle-exclamation';text='text-amber-600';}
+    $('statusBadge').className=`px-6 py-2.5 rounded-full font-bold text-lg flex items-center gap-2 text-white shadow-lg ${badge}`;
+    $('statusBadge').innerHTML=`<i class="fa-solid ${icon}"></i>${escapeHtml(data.statusLabel)}`;
+    $('displayUrl').textContent=url;
+    $('riskScoreText').textContent=score+'%'; $('riskScoreText').className=`absolute text-4xl font-black ${text}`;
+    $('gaugePath').setAttribute('stroke',color); $('gaugePath').setAttribute('stroke-dasharray',`${score},100`);
+    $('riskLabel').textContent=score>=60?'Rủi ro cao':score>=30?'Cần kiểm tra kỹ':'Chưa thấy dấu hiệu rõ ràng';
+    $('riskLabel').className=`mt-4 font-bold text-center ${text}`;
+    $('aiAnalysisContent').textContent=data.summary;
+    const details=$('technicalDetails'); details.replaceChildren();
+    (data.technicalPoints||[]).forEach(item=>{
+      const card=document.createElement('div');card.className='detail-card flex gap-4 p-5 rounded-xl border border-gray-100 bg-white';
+      const iconBox=document.createElement('div');iconBox.className=`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${item.isGood?'text-green-600 bg-green-100':'text-red-600 bg-red-100'}`;
+      iconBox.innerHTML=`<i class="fa-solid ${item.isGood?'fa-check':'fa-xmark'}"></i>`;
+      const content=document.createElement('div');const h=document.createElement('h4');h.className='font-bold text-gray-900 mb-1';h.textContent=item.point;
+      const p=document.createElement('p');p.className='text-sm text-gray-600 leading-relaxed';p.textContent=item.description;
+      content.append(h,p);card.append(iconBox,content);details.append(card);
+    });
+    results.classList.remove('hidden');
+    results.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function customAlert(title,message){
+    const overlay=document.createElement('div');overlay.className='fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+    const box=document.createElement('div');box.className='bg-white rounded-3xl p-7 max-w-sm w-full shadow-2xl text-center';
+    const h=document.createElement('h3');h.className='text-xl font-bold text-gray-900 mb-2';h.textContent=title;
+    const p=document.createElement('p');p.className='text-gray-600 mb-6';p.textContent=message;
+    const b=document.createElement('button');b.className='w-full py-3 bg-gray-900 text-white rounded-xl font-semibold';b.textContent='Đã hiểu';
+    b.addEventListener('click',()=>overlay.remove());overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+    box.append(h,p,b);overlay.append(box);document.body.append(overlay);
+  }
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();let url=urlInput.value.trim();if(!url)return;
+    if(!/^https?:\/\//i.test(url))url='https://'+url;
+    if(!validUrl(url)){customAlert('Địa chỉ không hợp lệ','Hãy nhập URL hợp lệ, ví dụ https://example.com');return;}
+    setLoading(true);
+    try {const data=await analyzeUrl(url);renderResults(data,url);}
+    catch(err){customAlert('Có lỗi xảy ra','Không thể phân tích đường link lúc này. Vui lòng thử lại.');}
+    finally{setLoading(false);}
+  });
+  $('resetBtn').addEventListener('click',()=>{results.classList.add('hidden');urlInput.value='';clearBtn.classList.add('hidden');window.scrollTo({top:0,behavior:'smooth'});urlInput.focus();});
+  $('copyBtn').addEventListener('click',async()=>{
+    if(!lastReport)return;
+    const d=lastReport;const report=`BÁO CÁO SAFELINK AI\nURL: ${d.url}\nTrạng thái: ${d.statusLabel}\nĐiểm rủi ro: ${d.riskScore}%\n\nĐÁNH GIÁ:\n${d.summary}\n\nCHI TIẾT:\n${(d.technicalPoints||[]).map(x=>`- ${x.point}: ${x.description}`).join('\n')}`;
+    try{await navigator.clipboard.writeText(report);$('copyBtn').innerHTML='<i class="fa-solid fa-check mr-2"></i>Đã sao chép';setTimeout(()=>$('copyBtn').innerHTML='<i class="fa-regular fa-copy mr-2"></i>Copy báo cáo',1800);}
+    catch{customAlert('Không thể sao chép','Trình duyệt đã chặn clipboard. Bạn hãy thử mở trang qua HTTPS hoặc sao chép thủ công.');}
+  });
+
+  const labels=['','1 sao - Chưa hài lòng','2 sao - Cần cải thiện','3 sao - Bình thường','4 sao - Hài lòng','5 sao - Rất hài lòng'];
+  const stars=[...document.querySelectorAll('#starRating button')];
+  function updateStars(n){stars.forEach((s,i)=>s.classList.toggle('selected',i<n));$('ratingText').textContent=labels[n]||'Hãy chọn số sao';}
+  stars.forEach(s=>s.addEventListener('click',()=>{selectedRating=Number(s.dataset.star);updateStars(selectedRating);}));
+  function getReviews(){try{return JSON.parse(localStorage.getItem('safelink_reviews')||'[]');}catch{return [];}}
+  function renderReviews(){
+    const list=$('reviewList'), reviews=getReviews();$('reviewCount').textContent=`${reviews.length} đánh giá`;list.replaceChildren();
+    if(!reviews.length){const p=document.createElement('p');p.className='text-sm text-gray-500';p.textContent='Chưa có đánh giá nào.';list.append(p);return;}
+    reviews.slice().reverse().forEach(r=>{
+      const card=document.createElement('div');card.className='p-4 rounded-xl border border-gray-100 bg-white';
+      const top=document.createElement('div');top.className='flex justify-between gap-3 items-center';
+      const name=document.createElement('strong');name.className='text-gray-800';name.textContent=r.name;
+      const rating=document.createElement('span');rating.className='text-yellow-500 whitespace-nowrap';rating.textContent='★'.repeat(r.rating)+'☆'.repeat(5-r.rating);
+      top.append(name,rating);const p=document.createElement('p');p.className='text-sm text-gray-600 mt-2 whitespace-pre-wrap';p.textContent=r.content;
+      const date=document.createElement('p');date.className='text-xs text-gray-400 mt-2';date.textContent=new Date(r.createdAt).toLocaleString('vi-VN');
+      card.append(top,p,date);list.append(card);
+    });
+  }
+  $('reviewForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    if(!selectedRating){$('reviewMessage').textContent='Bạn hãy chọn số sao trước nhé.';$('reviewMessage').className='text-sm text-center text-red-600';return;}
+    const content=$('reviewContent').value.trim();if(!content){$('reviewMessage').textContent='Bạn hãy nhập nhận xét nhé.';return;}
+    const reviews=getReviews();reviews.push({name:$('reviewName').value.trim()||'Ẩn danh',rating:selectedRating,content,createdAt:new Date().toISOString()});
+    try{localStorage.setItem('safelink_reviews',JSON.stringify(reviews));}
+    catch{$('reviewMessage').textContent='Trình duyệt không cho phép lưu đánh giá.';$('reviewMessage').className='text-sm text-center text-red-600';return;}
+    $('reviewMessage').textContent='Cảm ơn bạn! Đánh giá đã được lưu trên thiết bị này.';$('reviewMessage').className='text-sm text-center text-green-600';
+    $('reviewForm').reset();selectedRating=0;updateStars(0);renderReviews();
+  });
+});
+</script>
+</body>
+</html>
